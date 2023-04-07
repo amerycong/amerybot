@@ -29,7 +29,7 @@ if ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
 
-    gauth = GoogleAuth()           
+    gauth = GoogleAuth()
     drive = GoogleDrive(gauth)
 
     fileID = config['GDRIVE']['file_id']
@@ -45,11 +45,11 @@ if ENABLE_GDRIVE:
 class admin_commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot # sets the client variable so we can use it in cogs
-    
+
     @commands.Cog.listener()
     async def on_ready(self):
         print('admin commands loaded')
-    
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.MissingAnyRole):
@@ -73,7 +73,7 @@ class admin_commands(commands.Cog):
         with open(idmapping_fn,'w') as f:
             json.dump(idmapping,f,indent=4,ensure_ascii=False)
         await ctx.send(response, allowed_mentions = discord.AllowedMentions(users=False))
-    
+
     @commands.command()
     @commands.has_any_role("Admin")
     async def setroles(self, ctx, *args):
@@ -118,7 +118,7 @@ class admin_commands(commands.Cog):
             gfile.SetContentFile(rolepref_fn)
             gfile.Upload() # Upload the file.
         await ctx.send(response, allowed_mentions = discord.AllowedMentions(users=False))
-    
+
     @commands.command()
     @commands.has_any_role("Admin")
     async def idmapping(self, ctx):
@@ -134,7 +134,7 @@ class admin_commands(commands.Cog):
             roleprefdict = json.load(f)
         response = ''.join([x+': '+roleprefdict[x]+'\n' for x in roleprefdict.keys()])
         await ctx.send("```"+response+"```", allowed_mentions = discord.AllowedMentions(users=False))
-    
+
     @commands.command()
     @commands.has_any_role("Admin")
     async def inhouse(self, ctx, *, arg):

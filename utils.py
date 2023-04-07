@@ -5,7 +5,7 @@ import itertools
 import ast
 import configparser
 import json
-   
+
 inhouse_config = configparser.ConfigParser()
 inhouse_config.read("config/inhouse.cfg")
 idmapping_fn = inhouse_config['USERDATA']['idmapping']

@@ -1,19 +1,12 @@
 import trueskill
 import numpy as np
 import pandas as pd
-import random
 import itertools
 import bisect
-import os
 import json
-import ipywidgets as widgets
 import IPython
 import requests
 import collections
-import seaborn as sns
-import matplotlib.pyplot as plt
-import glob
-import time
 import imgkit
 from pathlib import Path
 import configparser

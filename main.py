@@ -1,22 +1,13 @@
 # bot.py
 import os
 import numpy as np
-import json
-import pandas as pd
-import pickle
-import dill
 import itertools
 import asyncio
-import time
-import datetime
-from pathlib import Path
 import configparser
 from unidecode import unidecode
 import warnings
 warnings.filterwarnings("ignore")
-import re
 from utils import is_orca_working
-import argparse
 
 config = configparser.ConfigParser()
 config.read("config/bot.cfg")
@@ -34,7 +25,7 @@ if ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
 
-    gauth = GoogleAuth()           
+    gauth = GoogleAuth()
     drive = GoogleDrive(gauth)
 
     fileID = config['GDRIVE']['file_id']
@@ -103,11 +94,11 @@ async def on_message(message):
         if message.channel.type == discord.ChannelType(1):
             print(str(message.author)+' sent a DM lmao!')
         return
-    
+
     #replies to other users
     if str(message.author.id) == DISCORD_IDS['orca'] and is_orca_working() and np.random.rand()<0.25:
         response = 'shut up <@{}> go back to your wage cage'.format(DISCORD_IDS['orca'])
-        await message.channel.send(response)  
+        await message.channel.send(response)
     if str(message.author.id) ==DISCORD_IDS['jacob'] and np.random.rand()<0.05:
         response = 'Thank you for sharing, Jacob!'
         await message.channel.send(response)
@@ -118,7 +109,7 @@ async def on_message(message):
     #"normal" commands
     if message.content.lower() in ["i guess we're desperate","we're desperate"]:
         response = "<@{}> they're desperate - I assume there's a lobby of 4 that needs 1 warm body".format(DISCORD_IDS['intel'])
-        await message.channel.send(response)  
+        await message.channel.send(response)
     if message.content.lower() in ["im bored","i'm bored","i am bored"]:
         waging = is_orca_working()
         if waging:
@@ -126,7 +117,7 @@ async def on_message(message):
             "Alternatively, consider playing some inhouses <:{}>".format(DISCORD_IDS['orca_reaction'])
         else:
             response = '<@{}> time to give us content (you are not working right now)'.format(DISCORD_IDS['orca'])
-        await message.channel.send(response)  
+        await message.channel.send(response)
 
     #https://stackoverflow.com/questions/49331096/why-does-on-message-stop-commands-from-working
     await bot.process_commands(message)

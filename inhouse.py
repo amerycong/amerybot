@@ -1,30 +1,16 @@
-
 import trueskill
-from cassiopeia import Summoner
 import cassiopeia as cass
-import numpy as np
 import pandas as pd
-import random
-import itertools
-import bisect
-import os
 import json
-import ipywidgets as widgets
-import IPython
 import requests
-import collections
-import seaborn as sns
-import matplotlib.pyplot as plt
 import glob
-import time
 import configparser
 from match_processing import output_ratings, compute_ratings, parser
 from matchmaking import do_matchmaking
 from match_stats import output_plots, show_player_wr_by_champ, plot_elo_history
 from match_pull import pull_latest_match
-import argparse
 from pathlib import Path
-    
+
 config = configparser.ConfigParser()
 config.read("config/inhouse.cfg")
 
@@ -67,13 +53,13 @@ def generate_matchups(ratings, participants):
 def get_player_stats(ign, out_dir, fn=None):
     matches = parse_match_database(json_dir)
     messages = show_player_wr_by_champ(matches, ign)
-    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,filter,sort_metric)
+    ratings, *_ = compute_ratings(matches,filter,sort_metric)
     plot_elo_history(ratings, ign, out_dir, fn)
     return messages
 
 def update_results(tournament_code, known_ign, out_dir):
     if tournament_code is not None:
-        messages = pull_latest_match(known_ign, tournament_code, api_key, json_dir)
+        pull_latest_match(known_ign, tournament_code, api_key, json_dir)
     matches = parse_match_database(json_dir)
     ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,filter,sort_metric)
     output_ratings(ratings,False,out_dir)
@@ -82,6 +68,6 @@ def update_results(tournament_code, known_ign, out_dir):
 
 def inhouse_function(participants):
     matches = parse_match_database(json_dir)
-    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,False,sort_metric)
+    ratings, *_ = compute_ratings(matches,False,sort_metric)
     matchups = generate_matchups(ratings, participants)
     return matchups

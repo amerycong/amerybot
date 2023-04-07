@@ -25,7 +25,7 @@ if ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
 
-    gauth = GoogleAuth()           
+    gauth = GoogleAuth()
     drive = GoogleDrive(gauth)
 
     fileID = config['GDRIVE']['file_id']
@@ -41,11 +41,11 @@ if ENABLE_GDRIVE:
 class normie_commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot # sets the client variable so we can use it in cogs
-    
+
     @commands.Cog.listener()
     async def on_ready(self):
         print('normie commands loaded')
-    
+
     @commands.command()
     async def viewrolepref(self, ctx):
         with open(idmapping_fn,'r') as f:
@@ -87,7 +87,7 @@ class normie_commands(commands.Cog):
             # Read file and set it as the content of this instance.
             gfile.SetContentFile(rolepref_fn)
             gfile.Upload() # Upload the file.
-    
+
     @commands.command()
     async def viewprogress(self, ctx, *args):
         with open(idmapping_fn,'r') as f:
