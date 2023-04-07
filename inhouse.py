@@ -18,20 +18,16 @@ import matplotlib.pyplot as plt
 import glob
 import time
 import configparser
-from match_processing import *
-from matchmaking import *
-from match_stats import *
-from synergy import *
-from match_pull import *
+from match_processing import output_ratings, compute_ratings, parser
+from matchmaking import do_matchmaking
+from match_stats import output_plots, show_player_wr_by_champ, plot_elo_history
+from match_pull import pull_latest_match
+import argparse
+from pathlib import Path
     
 config = configparser.ConfigParser()
-config.read("inhouse.cfg")
+config.read("config/inhouse.cfg")
 
-#code for last played match
-tournament_code = config['MATCH']['tournament_code']
-#ign of someone who played in that game
-ign = config['MATCH']['ign']
-pull_last_match = config['MATCH'].getboolean('pull_last_match')
 #secret key
 api_key = config['API']['api_key']
 
@@ -42,11 +38,13 @@ sort_metric = config['RATINGS']['sort_metric']
 
 cass.set_riot_api_key(api_key)
 
-smurf_filename = 'smurfs.json'
+json_dir = config['DATA']['json_dir']
+
+smurf_filename = config['USERDATA']['smurfs']
 with open(smurf_filename,'r') as f:
     SMURFS = json.load(f)
 
-rolepref_filename = 'rolepref.json'
+rolepref_filename = config['USERDATA']['rolepref']
 with open(rolepref_filename,'r') as f:
     PLAYER_ROLE_PREF = json.load(f)
 
@@ -55,8 +53,8 @@ champs = requests.get('https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/cha
 CHAMP_ICON_URL = 'https://ddragon.leagueoflegends.com/cdn/{}/img/champion/{{}}.png'.format(version)
 champs_by_key = {int(champ['key']): champ for champ in champs['data'].values()}
 
-def parse_match_database(inhouse_data_path = 'inhouse_game_data/'):
-    game_files = sorted(glob.glob(inhouse_data_path+'*.json'))
+def parse_match_database(inhouse_data_path):
+    game_files = sorted(glob.glob(str(Path(inhouse_data_path) / '*.json')))
     matches = pd.DataFrame.from_records([parser(json.dumps(json.load(open(x)))) for x in game_files])
     return matches
 
@@ -66,15 +64,24 @@ def generate_matchups(ratings, participants):
     matchups = do_matchmaking(ratings, participants, PLAYER_ROLE_PREF)
     return matchups
 
-def inhouse_function2(participants, STORED_CHANNEL):
-    matchups = [['TheShy','Bengi','Faker','DoubleLift','TensorFlow'],['Junecake','Miss Viper','FillyBs','bobzillas','Yuumi Bot']]
-    time.sleep(10)
-    return matchups
-
-def inhouse_function(participants, STORED_CHANNEL):
-    if pull_last_match:
-        messages = pull_latest_match(ign, tournament_code, api_key=api_key)
-    matches = parse_match_database()
+def get_player_stats(ign, out_dir, fn=None):
+    matches = parse_match_database(json_dir)
+    messages = show_player_wr_by_champ(matches, ign)
     ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,filter,sort_metric)
+    plot_elo_history(ratings, ign, out_dir, fn)
+    return messages
+
+def update_results(tournament_code, known_ign, out_dir):
+    if tournament_code is not None:
+        messages = pull_latest_match(known_ign, tournament_code, api_key, json_dir)
+    matches = parse_match_database(json_dir)
+    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,filter,sort_metric)
+    output_ratings(ratings,False,out_dir)
+    draft_messages = output_plots(matches, ratings, wins, losses, totals_with, totals_against, out_dir)
+    return draft_messages
+
+def inhouse_function(participants):
+    matches = parse_match_database(json_dir)
+    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,False,sort_metric)
     matchups = generate_matchups(ratings, participants)
     return matchups

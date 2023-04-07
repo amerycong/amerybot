@@ -4,14 +4,22 @@ import requests
 import json
 import os
 import numpy as np
+from pathlib import Path
 
-def pull_latest_match(ign, tournament_code, api_key,json_dir='inhouse_game_data',notebook=False):
+#at the time of writing this, could not figure way to pull via tourney code
+#directly, so I have to pull via match history of a known player
+#https://github.com/RiotGames/developer-relations/issues/552
+#confirmed pulling by tourney code existed in v4 but removed in v5
+def pull_latest_match(ign, tournament_code, api_key,json_dir,notebook=False):
+    #in theory, we could do it all via riot api calls by using puuid
+    #however, cass handles puuid from ign automatically
+    #cass doesnt handle tournament codes tho, so fuck it we just use both for now
     cass.set_riot_api_key(api_key)
 
     messages = []
     
-    tf = Summoner(name=ign,region="NA")
-    match_ids = [x.id for x in tf.match_history]
+    player = Summoner(name=ign,region="NA")
+    match_ids = [x.id for x in player.match_history]
 
     found_match = False
     for i,match_id in enumerate(match_ids):
@@ -36,7 +44,7 @@ def pull_latest_match(ign, tournament_code, api_key,json_dir='inhouse_game_data'
             team_ids = np.unique([mh['info']['participants'][i]['teamId'] for i in range(len(mh['info']['participants']))])
             match_participants = [print('team '+str(i+1)+': '+''.join(str([mh['info']['participants'][k]['summonerName']+' ('+mh['info']['participants'][k]['championName']+')' for k in range(len(mh['info']['participants'])) if mh['info']['participants'][k]['teamId']==j]))) for i,j in enumerate(team_ids)]
             print('\n')
-            json_path = os.path.join(json_dir,match_id+'.json')
+            json_path = str(Path(json_dir) / match_id+'.json')
             #json_path = '/content/drive/MyDrive/inhouse_game_data/'+match_id+'.json'
             if os.path.isfile(json_path):
                 game_exists_str = 'Game '+match_id+' already seems to be downloaded, double check?'

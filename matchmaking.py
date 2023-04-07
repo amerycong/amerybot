@@ -27,15 +27,24 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
     #     for player in current_players
     # }
     player_ratings = {}
+    if len(set(current_players))<=10:
+        current_players = list(set(current_players))
+    else:
+        print("too many players entered ("+len(set(current_players))+")")
+        return None, "too many players entered ("+len(set(current_players))+")"
     for player in current_players:
         if type(player)==tuple:#',' in player:
             player_name = player[0]
             player_input = player[1]
-            player_ratings[player_name] = trueskill.Rating(float(player_input.split(', ')[0]))
-            PLAYER_ROLE_PREF[player_name] = player_input.split(', ')[1]
+            player_ratings[player_name] = trueskill.Rating(float(player_input.split(',')[0].strip()))
+            PLAYER_ROLE_PREF[player_name] = player_input.split(',')[1].strip()
         else:
-            player_ratings[player] = ratings.loc[player, "trueskill.Rating"]
-    print(player_ratings)
+            try:
+                player_ratings[player] = ratings.loc[player, "trueskill.Rating"]
+            except:
+                print(player+' not found in match history')
+                return None, player+' not found in match history'
+            
     for i in range(PLAYERS_PER_GAME - len(current_players)):
         player_ratings["New player #{}".format(i + 1)] = trueskill.Rating()
     players = player_ratings.keys()
@@ -101,6 +110,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
     elif sortby=='quality':
         matchups.sort(reverse=True)
     print('$$$$$$$$$$$$$$$$$$$$$$$$$$$\nLISTING MATCHUPS BY '+sortby.upper()+'\n$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+    final_matchups = []
     for count, (quality, t1_happy, t2_happy, match_happiness, team1, team1_roles, team2, team2_roles) in enumerate(matchups):#[:12]:
         if matchup_counter==num_matchups_displayed or quality<quality_threshold:
             if quality<quality_threshold:
@@ -122,17 +132,26 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         #       break
         if match_happiness>0:#t1_roles and t2_roles:
             print("\n*********OPTION {}*********\nQuality {:.6f}\tHappiness Coefficient {:.3f}".format(matchup_counter+1,quality, match_happiness))
-            team1_roles_pretty = ', '.join([team1_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team1_roles])[0][0] for s in ROLES]])
-            team2_roles_pretty = ', '.join([team2_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team2_roles])[0][0] for s in ROLES]])
-            team1_str = "Team 1 (avg MMR {:.3f}, happiness {:.3f}): {}".format(
+            team1_roles_ordered = [team1_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team1_roles])[0][0] for s in ROLES]]
+            team2_roles_ordered = [team2_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team2_roles])[0][0] for s in ROLES]]
+            team1_roles_pretty = ', '.join(team1_roles_ordered)
+            team2_roles_pretty = ', '.join(team2_roles_ordered)
+            team1_str = "Team 1 (avg MMR {:.3f}, happiness {:.3f}):\n{}".format(
                     avg_mmr(team1), t1_happy, team1_roles_pretty
                 )
-            team2_str = "Team 2 (avg MMR {:.3f}, happiness {:.3f}): {}".format(
+            team2_str = "Team 2 (avg MMR {:.3f}, happiness {:.3f}):\n{}".format(
                     avg_mmr(team2), t2_happy, team2_roles_pretty
                 )
+            team1_roles_ordered = [team1_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team1_roles])[0][0] for s in ROLES]]
+            team2_roles_ordered = [team2_roles[z].ljust(20) for z in [np.where(['('+s+')' in t for t in team2_roles])[0][0] for s in ROLES]]
+            matchup_str = ""
+            for i,row in enumerate(zip(
+                ['Team 1','avg mmr = {:.3f}'.format(avg_mmr(team1)), 'happiness = {:.3f}'.format(t1_happy),'-'*20]+team1_roles_ordered,
+                ['Team 2','avg mmr = {:.3f}'.format(avg_mmr(team2)), 'happiness = {:.3f}'.format(t2_happy),'-'*20]+team2_roles_ordered
+                )):
+                matchup_str += "{:<20} | {:<20}\n".format(*row)
             if count==0: #maybe make more robust based on how many matchups, dont rely on counter
-                messages.append(team1_str)
-                messages.append(team2_str)
+                final_matchups.append(matchup_str)
             print(team1_str)
             print(team2_str)
             matchup_counter+=1
@@ -154,4 +173,4 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         messages.append(no_valid_matchups_str)
         print(no_valid_matchups_str)
     
-    return messages
+    return final_matchups, messages

@@ -14,20 +14,123 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import glob
 import time
+import imgkit
+from pathlib import Path
+import configparser
 
-smurf_filename = 'smurfs.json'
+def is_notebook() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
+IS_NOTEBOOK = is_notebook()
+
+config = configparser.ConfigParser()
+config.read("config/inhouse.cfg")
+
+smurf_filename = config['USERDATA']['smurfs']
 with open(smurf_filename,'r') as f:
     SMURFS = json.load(f)
 
-rolepref_filename = 'rolepref.json'
+rolepref_filename = config['USERDATA']['rolepref']
 with open(rolepref_filename,'r') as f:
     PLAYER_ROLE_PREF = json.load(f)
+
+intel_list_filename = config['USERDATA']['intel_list']
+with open(intel_list_filename) as f:
+    intel_list = [line.rstrip() for line in f]
+
+guest_list_filename = config['USERDATA']['guest_list']
+with open(guest_list_filename) as f:
+    guest_list = [line.rstrip() for line in f]
 
 version = requests.get('https://ddragon.leagueoflegends.com/api/versions.json').json()[0]
 champs = requests.get('https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json'.format(version)).json()
 CHAMP_ICON_URL = 'https://ddragon.leagueoflegends.com/cdn/{}/img/champion/{{}}.png'.format(version)
 champs_by_key = {int(champ['key']): champ for champ in champs['data'].values()}
 
+def output_ratings(ratings, comprehensive, out_dir = None):
+    if out_dir is not None:
+        out_fn = str(Path(out_dir)  / 'ratings.png')
+        options = {'width': 1600}
+        if comprehensive:
+            imgkit.from_string(
+                ratings[["Rating", "Rank", "Record", "Streak", "μ", "σ", "KDA", "avg time", "CSpM",'GpM',"DMGpM","DMGpG",'VisionpM',"PP SIZE","Champs"]]
+                .rename(columns={"μ": "MMR", "σ": "conf", "PP SIZE": "PP SIZE (in.)"})
+                .style.format({
+                            "Rating": "{:0.3f}",
+                            "MMR": "{:0.3f}",
+                            "conf": "{:0.3f}",
+                            'Champs': lambda champs: ' '.join(
+                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                for champ in collections.Counter(champs).most_common()
+                            )
+                        })
+                        .set_properties(
+                            subset=["Rating", "Rank", "Record", "MMR", "conf", "KDA", "avg time", "CSpM",'GpM','DMGpM','DMGpG','VisionpM'], **{"text-align": "right"}
+                        )
+                        .to_html(),out_fn,options=options)
+        else:
+            imgkit.from_string(
+            ratings[["Rating", "Rank", "Record", "Streak", "μ", "KDA", "avg time", "CSpM",'GpM',"DMGpM","DMGpG",'VisionpM',"Champs"]]
+            .rename(columns={"μ": "MMR", "PP SIZE": "PP SIZE (in.)", "Champs": "Most Played"})
+            .style.format({
+                        "Rating": "{:0.3f}",
+                        "MMR": "{:0.3f}",
+                        #"conf": "{:0.3f}",
+                        'Most Played': lambda champs: ' '.join(
+                            '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                            for champ in collections.Counter(champs).most_common(5)
+                        )
+                    })
+                    .set_properties(
+                        subset=["Rating", "Rank", "Record", "MMR", "KDA", "avg time", "CSpM",'GpM','DMGpM','DMGpG','VisionpM'], **{"text-align": "right","font-family": "Terminal"}
+                    )
+                    .to_html(),out_fn,options=options)
+    if IS_NOTEBOOK:
+        if comprehensive:
+            return IPython.display.HTML(
+                ratings[["Rating", "Rank", "Record", "Streak", "μ", "σ", "KDA", "avg time", "CSpM",'GpM',"DMGpM","DMGpG",'VisionpM',"PP SIZE","Champs"]]
+                .rename(columns={"μ": "MMR", "σ": "conf", "PP SIZE": "PP SIZE (in.)"})
+                .style.format({
+                            "Rating": "{:0.3f}",
+                            "MMR": "{:0.3f}",
+                            "conf": "{:0.3f}",
+                            'Champs': lambda champs: ' '.join(
+                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                for champ in collections.Counter(champs).most_common()
+                            )
+                        })
+                        .set_properties(
+                            subset=["Rating", "Rank", "Record", "MMR", "conf", "KDA", "avg time", "CSpM",'GpM','DMGpM','DMGpG','VisionpM'], **{"text-align": "right"}
+                        )
+                        .render(escape=False)
+            )
+        else:
+            return IPython.display.HTML(
+                ratings[["Rating", "Rank", "Record", "Streak", "μ", "KDA", "avg time", "CSpM",'GpM',"DMGpM","DMGpG",'VisionpM',"Champs"]]
+                .rename(columns={"μ": "MMR", "PP SIZE": "PP SIZE (in.)", "Champs": "Most Played"})
+                .style.format({
+                            "Rating": "{:0.3f}",
+                            "MMR": "{:0.3f}",
+                            #"conf": "{:0.3f}",
+                            'Most Played': lambda champs: ' '.join(
+                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                for champ in collections.Counter(champs).most_common(5)
+                            )
+                        })
+                        .set_properties(
+                            subset=["Rating", "Rank", "Record", "MMR", "KDA", "avg time", "CSpM",'GpM','DMGpM','DMGpG','VisionpM'], **{"text-align": "right"}
+                        )
+                        .render(escape=False)
+            )
 
 def get_canonical_name(name):
     return SMURFS[name] if name in SMURFS else name
@@ -333,20 +436,6 @@ def compute_dick_length(stats):
 
 
 def compute_ratings(matches,filter=False,sort_metric='Rating'):
-
-    intel_list = ['TensorFlow', 'TensorFlow (jungle)', 'TensorFlow (bobz)',
-        'MrRgrs', 'MrRgrs (lane)','TheGatorMan', 'Omarlitle', 
-        'Miss Viper', 'Miss Viper (jungle)','Dokgaebi', 'RageMuffinz', 
-        'ClappityBunny', 'bobzillas',
-        'Orcamaster','Demacian Smite ',
-        'ANiceSunset', 'ANiceSunset (adc)', 'ANiceSunset (Ahrizona)',
-        'icaneataberger', 'Namikami','Namikami (lane)', 
-        'Bradnon', 'Mindpalace', 'ZoSo',
-        'Shragon','CantonNeko','BathSalt', 'Snekky', 'IIIDemigodIII', 
-        'Time Engineer', 'Im Tushikatotem', 'FatYthaar', 'Jacmert', 'Speedy Boykins',
-        'Projective Cat', 'RectumHoward', 'Ai Lan Ball']
-    inactive_intel_list = []
-    guest_list = ['Hokari','Skullchaos','Agani']
 
     filter_list = intel_list + guest_list
 
