@@ -221,7 +221,6 @@ async def setup(bot: commands.Bot):
             print('Old message. Not handling reactions anymore.')
             return
         if not content.startswith("Trying to start an inhouse"):
-            print('wrong message to react to. ignoring')
             return
         if not message.author.bot:
             return
