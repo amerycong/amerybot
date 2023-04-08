@@ -143,23 +143,24 @@ class admin_commands(commands.Cog):
         #first, convert discord IDs to summoner names
         id_starts = [s.start() for s in re.finditer('<@',arg)]
         id_ends = [s.start() for s in re.finditer('>',arg)]
+        arg2=''.join(arg)
         for i, idx in enumerate(zip(id_starts, id_ends)):
             member_id = arg[idx[0]+2:idx[1]]
             if member_id not in idmapping.keys():
                 await ctx.reply('<@'+member_id+"> doesn't exist in the mapping")
                 return
             player_ign = idmapping[member_id]
-            arg = arg.replace('<@'+member_id+'>',player_ign)
+            arg2 = arg2.replace('<@'+member_id+'>',player_ign)
         #then read as list
-        participants = participant_parse(arg)
+        participants = participant_parse(arg2)
         response = 'Generating inhouse matchups for:\n'+str(participants)
         await ctx.send(response)
         matchups, messages = await self.bot.loop.run_in_executor(None, inhouse_function, participants)
         if matchups is not None:
-            response2 = "```"+matchups[0]+"```"
+            response2 = "```"+'\n'.join(matchups)+"```"
             await ctx.send(response2)
         else:
-            await ctx.reply(messages)
+            await ctx.reply('\n'.join(messages))
 
     @commands.command()
     @commands.has_any_role("Admin")
@@ -184,9 +185,14 @@ class admin_commands(commands.Cog):
                 ign_idx = arg_arr[0]
                 known_ign = args[ign_idx]
 
-        response = "Processing latest match (code: {})...".format(tournament_code)
+        if tournament_code:
+            response = "Processing latest match (code: {})...".format(tournament_code)
+        else:
+            response = 'Generating stats for all matches (no new match code provided)'
         await ctx.send(response)
-        response2 = await self.bot.loop.run_in_executor(None, update_results,tournament_code, known_ign, OUT_DIR)
+        pull_messages, draft_messages = await self.bot.loop.run_in_executor(None, update_results,tournament_code, known_ign, OUT_DIR)
+        if pull_messages:
+            await ctx.send('\n'.join(pull_messages))
         inhouse_channel = self.bot.get_channel(OUTPUT_CHANNEL_ID)
         selected_plots = ['ratings']
         if full_stats:
@@ -195,7 +201,7 @@ class admin_commands(commands.Cog):
             out_fn = str(Path(OUT_DIR) / (fn+'.png'))
             await inhouse_channel.send(file=discord.File(out_fn))
         if full_stats:
-            await inhouse_channel.send("```"+'\n'.join(response2)+"```")
+            await inhouse_channel.send("```"+'\n'.join(draft_messages)+"```")
         response3 = 'done, check <#'+str(OUTPUT_CHANNEL_ID)+'>'
         await ctx.send(response3)
 

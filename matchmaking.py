@@ -11,6 +11,7 @@ ROLE_PERMUTATIONS = [''.join(p) for p in itertools.permutations(ROLES)]
 random.shuffle(ROLE_PERMUTATIONS)
 
 def get_role_pref(p,PLAYER_ROLE_PREF):
+    #attempt to get roles, default to fill
     pref = PLAYER_ROLE_PREF.get(p,ROLES)
     if len(pref)>5:
       pref = ROLES
@@ -33,7 +34,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         print("too many players entered ("+len(set(current_players))+")")
         return None, "too many players entered ("+len(set(current_players))+")"
     for player in current_players:
-        if type(player)==tuple:#',' in player:
+        if type(player)==tuple:
             player_name = player[0]
             player_input = player[1]
             player_ratings[player_name] = trueskill.Rating(float(player_input.split(',')[0].strip()))
@@ -42,8 +43,9 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
             try:
                 player_ratings[player] = ratings.loc[player, "trueskill.Rating"]
             except:
-                print(player+' not found in match history')
-                return None, player+' not found in match history'
+                print(player+' not found in match history, using default MMR ({})'.format(trueskill.global_env().mu))
+                messages.append(player+' not found in match history, using default MMR ({})'.format(trueskill.global_env().mu))
+                player_ratings[player] = trueskill.Rating(trueskill.global_env().mu)
             
     for i in range(PLAYERS_PER_GAME - len(current_players)):
         player_ratings["New player #{}".format(i + 1)] = trueskill.Rating()
@@ -104,7 +106,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
 
     num_matchups_displayed = 10
     matchup_counter = 0
-    quality_threshold = 0.5
+    quality_threshold = 0.4
     if sortby=='happiness':
         matchups.sort(key=lambda x: x[3], reverse=True)
     elif sortby=='quality':
@@ -150,7 +152,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
                 ['Team 2','avg mmr = {:.3f}'.format(avg_mmr(team2)), 'happiness = {:.3f}'.format(t2_happy),'-'*20]+team2_roles_ordered
                 )):
                 matchup_str += "{:<20} | {:<20}\n".format(*row)
-            if count==0: #maybe make more robust based on how many matchups, dont rely on counter
+            if not final_matchups: #maybe make more robust based on how many matchups, dont rely on counter
                 final_matchups.append(matchup_str)
             print(team1_str)
             print(team2_str)
@@ -169,8 +171,8 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
             #     )
             # )
     if matchup_counter==0:
+        final_matchups=None
         no_valid_matchups_str = 'no valid matchups found'
         messages.append(no_valid_matchups_str)
         print(no_valid_matchups_str)
-    
     return final_matchups, messages

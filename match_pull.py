@@ -20,7 +20,6 @@ def pull_latest_match(ign, tournament_code, api_key,json_dir,notebook=False):
     
     player = Summoner(name=ign,region="NA")
     match_ids = [x.id for x in player.match_history]
-
     found_match = False
     for i,match_id in enumerate(match_ids):
         if str(match_id)[:3]!='NA1':
@@ -36,19 +35,23 @@ def pull_latest_match(ign, tournament_code, api_key,json_dir,notebook=False):
         if mh['info']['tournamentCode']==tournament_code:
             found_match = True
             print('inhouse game found for '+ign+' '+str(i+1)+' game(s) ago! ('+match_id+')')
+            messages.append('inhouse game found for '+ign+' '+str(i+1)+' game(s) ago! ('+match_id+')')
             #sanity check to make sure it's the right game
             print('=============================================')
             print('VERIFY TEAMS BELOW ARE ACCURATE FOR LAST GAME')
             print('=============================================')
             print('\n')
+            messages.append("last game's participants:")
             team_ids = np.unique([mh['info']['participants'][i]['teamId'] for i in range(len(mh['info']['participants']))])
             match_participants = [print('team '+str(i+1)+': '+''.join(str([mh['info']['participants'][k]['summonerName']+' ('+mh['info']['participants'][k]['championName']+')' for k in range(len(mh['info']['participants'])) if mh['info']['participants'][k]['teamId']==j]))) for i,j in enumerate(team_ids)]
             print('\n')
-            json_path = str(Path(json_dir) / match_id+'.json')
+            [messages.append('team '+str(i+1)+': '+''.join(str([mh['info']['participants'][k]['summonerName']+' ('+mh['info']['participants'][k]['championName']+')' for k in range(len(mh['info']['participants'])) if mh['info']['participants'][k]['teamId']==j]))) for i,j in enumerate(team_ids)]
+
+            json_path = str(Path(json_dir) / (match_id+'.json'))
             #json_path = '/content/drive/MyDrive/inhouse_game_data/'+match_id+'.json'
             if os.path.isfile(json_path):
                 game_exists_str = 'Game '+match_id+' already seems to be downloaded, double check?'
-                messages.append(game_exists_str)
+                messages.append('Game '+match_id+' already exists in database')
                 print(game_exists_str)
             else:
                 with open(json_path,'w') as f:
