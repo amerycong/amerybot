@@ -123,7 +123,7 @@ class admin_commands(commands.Cog):
     @commands.command()
     @commands.has_any_role("Admin")
     async def startinhouse(self, ctx: commands.Context):
-        message = await ctx.send(f"Trying to start an inhouse. Thumbs up to join.\nParticipants: 0")
+        message = await ctx.send("Trying to start an <@{}>. Thumbs up to join.\nParticipants: 0".format(settings.DISCORD_IDS['inhouse']))
         await message.add_reaction(THUMBSUP)
 
     @commands.command()
@@ -203,6 +203,7 @@ class admin_commands(commands.Cog):
             "!setroles <discord_tag OR ign> <tjmas or 5 digit number>: set player's inhouse role pref",
             '!idmapping: show idmapping',
             '!allrolepref: show all roleprefs',
+            '!startinhouse: try to farm 10 bodies',
             "!inhouse <up to 10 participants, comma separated>: participants can be discord tags, igns, or string tuple in form of ('ign','mmr,rolepref')",
             "!results <tourney_code> <known_ign> -full: all arguments optional, enter tourney code to pull match. known ign is a participant. '-full' to output all stats"
         ]
@@ -226,7 +227,7 @@ async def setup(bot: commands.Bot):
         if minutes > 60:
             print('Old message. Not handling reactions anymore.')
             return
-        if not content.startswith("Trying to start an inhouse"):
+        if not content.startswith("Trying to start an"):
             return
         if not message.author.bot:
             return
