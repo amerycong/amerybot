@@ -232,12 +232,16 @@ async def setup(bot: commands.Bot):
         assert up_reaction
         l1, l2, *extra = content.split('\n')
         # checking extra prevents us from pinging people over and over
-        if count >= 10 and not extra:
-            parts = ', '.join([x.name async for x in up_reaction.users() if not x.bot])
-            l2 = f'Complete: {parts}\nPinging...'
-            ping = [f'<@{x.id}>' async for x in up_reaction.users() if not x.bot]
-            new_message = f"We have 10, come join the inhouse -- {''.join(ping)}"
-            await message.reply(new_message)
+        up_users = [x async for x in up_reaction.users() if not x.bot]
+        parts = ', '.join([x.name for x in up_users])
+        is_completed = count >= 1
+        if is_completed:
+            l2 = f'Complete: {parts}'
+            if not extra:
+                l2 += '\nPinging...'
+                ping = [f'<@{x.id}>' for x in up_users]
+                new_message = f"We have 10, come join the inhouse -- {''.join(ping)}"
+                await message.reply(new_message)
         else:
             l2 = f'Participants: {count}'
         content = f"{l1}\n{l2}"
