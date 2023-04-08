@@ -81,12 +81,12 @@ def get_proper_name(ign):
     if not isinstance(ign, str):
         return ign
     raw_ign = ign.replace(' ','').lower()
-    for k, true_ign in settings.SMURFS.items():
-        raw_key = k.replace(' ','').lower()
+    for i, true_ign in settings.SMURFS.items():
+        raw_key = true_ign.replace(' ','').lower()
         if raw_ign == raw_key:
             return true_ign
-    for k, true_ign in settings.PLAYER_ROLE_PREF.items():
-        raw_key = k.replace(' ','').lower()
+    for i, true_ign in settings.PLAYER_ROLE_PREF.items():
+        raw_key = true_ign.replace(' ','').lower()
         if raw_ign == raw_key:
             return true_ign
     return ign

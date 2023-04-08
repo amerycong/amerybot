@@ -22,7 +22,7 @@ def parse_match_database(inhouse_data_path):
 def generate_matchups(ratings, participants):
     #input is like
     #participants= ['Ai Lan Ball', 'ANiceSunset', 'BathSalt', 'bobzillas', 'Bradnon', 'ClappityBunny', 'FatYthaar', 'Namikami', 'TensorFlow', ('newplayer1', '20, 32064')]
-    matchups, messages = do_matchmaking(ratings, participants, PLAYER_ROLE_PREF)
+    matchups, messages = do_matchmaking(ratings, participants, settings.PLAYER_ROLE_PREF)
     return matchups, messages
 
 def get_player_stats(ign, out_dir, fn=None):
@@ -34,11 +34,11 @@ def get_player_stats(ign, out_dir, fn=None):
 
 def update_results(tournament_code, known_ign, out_dir):
     if tournament_code is not None:
-        pull_messages = pull_latest_match(known_ign, tournament_code, api_key, json_dir)
+        pull_messages = pull_latest_match(known_ign, tournament_code, settings.api_key, settings.json_dir)
     else:
         pull_messages = None
-    matches = parse_match_database(json_dir)
-    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches,filter,sort_metric)
+    matches = parse_match_database(settings.json_dir)
+    ratings, wins, losses, totals_with, totals_against = compute_ratings(matches, settings.filter, settings.sort_metric)
     output_ratings(ratings,False,out_dir)
     draft_messages = output_plots(matches, ratings, wins, losses, totals_with, totals_against, out_dir)
     return pull_messages, draft_messages
