@@ -65,7 +65,7 @@ def plot_elo_history(ratings,name='TensorFlow',out_dir=None,fn=None):
       out_fn+='_'+fn
     plt.savefig(str(Path(out_dir) / (out_fn+'.png')))
 
-def plot_rank_dist(ratings,out_dir=None,bw_method=None,type='rating'):
+def plot_rank_dist(ratings,out_dir=None,bw_method=None):
   plt.subplots(figsize=(20,10))
   ratings['Rating'].plot.kde(bw_method)
   plt.xlabel('Rating')

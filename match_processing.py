@@ -8,7 +8,7 @@ import IPython
 import collections
 import imgkit
 from pathlib import Path
-from . import settings
+import settings
 
 
 def is_notebook() -> bool:

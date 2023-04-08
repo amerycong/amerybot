@@ -20,7 +20,7 @@ def get_role_pref(p,PLAYER_ROLE_PREF):
       role_pref = ROLES if pref=='f' else pref
     return role_pref
 
-def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',notebook=False):
+def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality'):
     messages = []
     # player_ratings = {
     #     player: ratings.loc[player, "trueskill.Rating"]

@@ -3,7 +3,7 @@ import datetime
 import re
 import itertools
 import ast
-from . import settings
+import settings
 
 roles = ['t','j','m','a','s']
 valid_roleprefs = ['f']

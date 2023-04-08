@@ -8,7 +8,7 @@ from matchmaking import do_matchmaking
 from match_stats import output_plots, show_player_wr_by_champ, plot_elo_history
 from match_pull import pull_latest_match
 from pathlib import Path
-from . import settings
+import settings
 
 #trueskill
 trueskill.setup(backend="scipy", draw_probability=0)

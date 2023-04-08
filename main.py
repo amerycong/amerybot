@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 from utils import is_orca_working
 import discord
 from discord.ext import commands, tasks
-from . import settings
+import settings
 
 if settings.ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
