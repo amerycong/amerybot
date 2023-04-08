@@ -1,22 +1,15 @@
 import trueskill
 import numpy as np
 import pandas as pd
-import random
 import itertools
 import bisect
-import os
 import json
-import ipywidgets as widgets
 import IPython
-import requests
 import collections
-import seaborn as sns
-import matplotlib.pyplot as plt
-import glob
-import time
 import imgkit
 from pathlib import Path
-import configparser
+import settings
+
 
 def is_notebook() -> bool:
     try:
@@ -32,30 +25,6 @@ def is_notebook() -> bool:
 
 IS_NOTEBOOK = is_notebook()
 
-config = configparser.ConfigParser()
-config.read("config/inhouse.cfg")
-
-smurf_filename = config['USERDATA']['smurfs']
-with open(smurf_filename,'r') as f:
-    SMURFS = json.load(f)
-
-rolepref_filename = config['USERDATA']['rolepref']
-with open(rolepref_filename,'r') as f:
-    PLAYER_ROLE_PREF = json.load(f)
-
-intel_list_filename = config['USERDATA']['intel_list']
-with open(intel_list_filename) as f:
-    intel_list = [line.rstrip() for line in f]
-
-guest_list_filename = config['USERDATA']['guest_list']
-with open(guest_list_filename) as f:
-    guest_list = [line.rstrip() for line in f]
-
-version = requests.get('https://ddragon.leagueoflegends.com/api/versions.json').json()[0]
-champs = requests.get('https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json'.format(version)).json()
-CHAMP_ICON_URL = 'https://ddragon.leagueoflegends.com/cdn/{}/img/champion/{{}}.png'.format(version)
-champs_by_key = {int(champ['key']): champ for champ in champs['data'].values()}
-
 def output_ratings(ratings, comprehensive, out_dir = None):
     if out_dir is not None:
         out_fn = str(Path(out_dir)  / 'ratings.png')
@@ -69,7 +38,7 @@ def output_ratings(ratings, comprehensive, out_dir = None):
                             "MMR": "{:0.3f}",
                             "conf": "{:0.3f}",
                             'Champs': lambda champs: ' '.join(
-                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                '<img style="height:24px" src="{}" />'.format(settings.CHAMP_ICON_URL.format(champ[0]))
                                 for champ in collections.Counter(champs).most_common()
                             )
                         })
@@ -86,7 +55,7 @@ def output_ratings(ratings, comprehensive, out_dir = None):
                         "MMR": "{:0.3f}",
                         #"conf": "{:0.3f}",
                         'Most Played': lambda champs: ' '.join(
-                            '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                            '<img style="height:24px" src="{}" />'.format(settings.CHAMP_ICON_URL.format(champ[0]))
                             for champ in collections.Counter(champs).most_common(5)
                         )
                     })
@@ -104,7 +73,7 @@ def output_ratings(ratings, comprehensive, out_dir = None):
                             "MMR": "{:0.3f}",
                             "conf": "{:0.3f}",
                             'Champs': lambda champs: ' '.join(
-                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                '<img style="height:24px" src="{}" />'.format(settings.CHAMP_ICON_URL.format(champ[0]))
                                 for champ in collections.Counter(champs).most_common()
                             )
                         })
@@ -122,7 +91,7 @@ def output_ratings(ratings, comprehensive, out_dir = None):
                             "MMR": "{:0.3f}",
                             #"conf": "{:0.3f}",
                             'Most Played': lambda champs: ' '.join(
-                                '<img style="height:24px" src="{}" />'.format(CHAMP_ICON_URL.format(champ[0]))
+                                '<img style="height:24px" src="{}" />'.format(settings.CHAMP_ICON_URL.format(champ[0]))
                                 for champ in collections.Counter(champs).most_common(5)
                             )
                         })
@@ -133,7 +102,7 @@ def output_ratings(ratings, comprehensive, out_dir = None):
             )
 
 def get_canonical_name(name):
-    return SMURFS[name] if name in SMURFS else name
+    return settings.SMURFS[name] if name in settings.SMURFS else name
 
 def parser(raw):
   if 'metadata' in json.loads(raw).keys():
@@ -143,8 +112,8 @@ def parser(raw):
 
 def parse_match(raw):
     match = json.loads(raw)
-    
-    match_id = match["info"]["gameId"]    
+
+    match_id = match["info"]["gameId"]
     match_duration = match["info"]["gameDuration"]
     identities = {
         pid["participantId"]: {"summonerName": pid["summonerName"]} for pid in match['info']['participants']
@@ -163,8 +132,8 @@ def parse_match(raw):
         )
         for team in (win_team, loss_team)
     )
-    
-    match_bans = [champs_by_key[x['championId']]['id'] for x in match["info"]["teams"][0]["bans"]+match["info"]["teams"][1]["bans"]]
+
+    match_bans = [settings.champs_by_key[x['championId']]['id'] for x in match["info"]["teams"][0]["bans"]+match["info"]["teams"][1]["bans"]]
     player_stats = {
         get_canonical_name(identities[p["participantId"]]["summonerName"]): {
               'win': p["win"],
@@ -181,7 +150,7 @@ def parse_match(raw):
               #'cs_diff_10': p["timeline"]['csDiffPerMinDeltas']['0-10']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '0-10' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #this shit bugged, not in all games
               #'cs_diff_20': p["timeline"]['csDiffPerMinDeltas']['0-10']*10+p["timeline"]['csDiffPerMinDeltas']['10-20']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '10-20' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #cs diff unreliable for 20+30, ignores monsters
               #'cs_diff_30': p["timeline"]['csDiffPerMinDeltas']['0-10']*10+p["timeline"]['csDiffPerMinDeltas']['10-20']*10+p["timeline"]['csDiffPerMinDeltas']['20-30']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '20-30' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #cs diff unreliable for 20+30, ignores monsters
-              'champ': champs_by_key[p['championId']]['id'],
+              'champ': settings.champs_by_key[p['championId']]['id'],
               'match_duration': match_duration
         }
         for p in match['info']['participants']
@@ -197,8 +166,8 @@ def parse_match(raw):
 
 def parse_old_match(raw):
     match = json.loads(raw)
-    
-    match_id = match["gameId"]    
+
+    match_id = match["gameId"]
     match_duration = match["gameDuration"]
     identities = {
         pid["participantId"]: pid["player"] for pid in match["participantIdentities"]
@@ -217,8 +186,8 @@ def parse_old_match(raw):
         )
         for team in (win_team, loss_team)
     )
-    
-    match_bans = [champs_by_key[x['championId']]['id'] for x in match["teams"][0]["bans"]+match["teams"][1]["bans"]]
+
+    match_bans = [settings.champs_by_key[x['championId']]['id'] for x in match["teams"][0]["bans"]+match["teams"][1]["bans"]]
     player_stats = {
         get_canonical_name(identities[p["participantId"]]["summonerName"]): {
               'win': p["stats"]["win"],
@@ -235,7 +204,7 @@ def parse_old_match(raw):
               'cs_diff_10': p["timeline"]['csDiffPerMinDeltas']['0-10']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '0-10' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #this shit bugged, not in all games
               'cs_diff_20': p["timeline"]['csDiffPerMinDeltas']['0-10']*10+p["timeline"]['csDiffPerMinDeltas']['10-20']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '10-20' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #cs diff unreliable for 20+30, ignores monsters
               'cs_diff_30': p["timeline"]['csDiffPerMinDeltas']['0-10']*10+p["timeline"]['csDiffPerMinDeltas']['10-20']*10+p["timeline"]['csDiffPerMinDeltas']['20-30']*10 if 'csDiffPerMinDeltas' in p["timeline"].keys() and '20-30' in p["timeline"]['csDiffPerMinDeltas'].keys() else 0, #cs diff unreliable for 20+30, ignores monsters
-              'champ': champs_by_key[p['championId']]['id'],
+              'champ': settings.champs_by_key[p['championId']]['id'],
               'match_duration': match_duration
         }
         for p in match["participants"]
@@ -260,15 +229,15 @@ def parse_old_match(raw):
             loss = tuple([x.replace(n,n+' (jungle)') for x in list(loss)])
     if False:
       #lane only stats (jg in lane lul)
-      for n in ['MrRgrs', 'ZoSo']:       
+      for n in ['MrRgrs', 'ZoSo']:
         if n in player_stats.keys():
           if player_stats[n]['lane']!='JUNGLE':
             player_stats[n+' (lane)']=player_stats.pop(n)
             win = tuple([x.replace(n,n+' (lane)') for x in list(win)])
             loss = tuple([x.replace(n,n+' (lane)') for x in list(loss)])
     if False:
-      #adc only stats 
-      for n in ['ANiceSunset','Ahrizona','Kurtzorz']:       
+      #adc only stats
+      for n in ['ANiceSunset','Ahrizona','Kurtzorz']:
         if n in player_stats.keys():
           if (player_stats[n]['role']!='DUO_SUPPORT') and (player_stats[n]['lane']=='BOTTOM'):
             player_stats[n+' (adc)']=player_stats.pop(n)
@@ -358,7 +327,7 @@ def compute_kda(stats,string=True):
       return "{:.1f} / {:.1f} / {:.1f} ({:.1f})".format(kills, deaths, assists, kda)
     else:
       return kda
-  
+
 def compute_gametime(stats):
     total_game_duration = sum(game['match_duration']/60.0 for game in stats if game)
     num_games = sum(1 for game in stats if game)
@@ -411,7 +380,7 @@ def compute_csdiff(stats,time=10):
     return "{:.1f}".format(csdiff)
 
 def compute_dick_length(stats):
-    total_num_champs = len(champs['data'])
+    total_num_champs = len(settings.champs['data'])
     num_games = sum(1 for game in stats if game)
     num_unique_champs = len(set([game["champ"] for game in stats if game]))
     if num_unique_champs == total_num_champs:
@@ -435,9 +404,9 @@ def compute_dick_length(stats):
     return "{:.2f}".format(dick_length)
 
 
-def compute_ratings(matches,filter=False,sort_metric='Rating'):
+def compute_ratings(matches, filter=False, sort_metric='Rating'):
 
-    filter_list = intel_list + guest_list
+    filter_list = settings.intel_list + settings.guest_list
 
     ratings = {}
     histories = {}
@@ -481,14 +450,14 @@ def compute_ratings(matches,filter=False,sort_metric='Rating'):
                 wins[i][j] += 1 if (i in match['win'] and j in match['win']) else 0
                 totals_with[i][j] += 1
               else:
-                wins[i][j] = 1 if (i in match['win'] and j in match['win']) else 0 
-                totals_with[i][j] = 1 
+                wins[i][j] = 1 if (i in match['win'] and j in match['win']) else 0
+                totals_with[i][j] = 1
             else:
               if i in totals_against.keys() and j in totals_against[i].keys():
-                losses[i][j] += 1 if (i in match['loss'] and j in match['win']) else 0 
+                losses[i][j] += 1 if (i in match['loss'] and j in match['win']) else 0
                 totals_against[i][j] += 1
               else:
-                losses[i][j] = 1 if (i in match['loss'] and j in match['win']) else 0 
+                losses[i][j] = 1 if (i in match['loss'] and j in match['win']) else 0
                 totals_against[i][j] = 1
 
     rows = [(name, rating, stats[name], histories[name]) for name, rating in ratings.items()]
@@ -530,7 +499,7 @@ def compute_ratings(matches,filter=False,sort_metric='Rating'):
 
     if filter:
       ratings = ratings[ratings.index.isin(filter_list)]
-    
+
     wins = pd.DataFrame(wins)
     wins = wins.reindex(sorted(wins.columns), axis=1)
     wins = wins.sort_index()

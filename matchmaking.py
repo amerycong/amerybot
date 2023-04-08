@@ -7,7 +7,7 @@ import numpy as np
 PLAYERS_PER_SIDE = 5
 PLAYERS_PER_GAME = PLAYERS_PER_SIDE * 2
 ROLES = 'tjmas'
-ROLE_PERMUTATIONS = [''.join(p) for p in itertools.permutations(ROLES)] 
+ROLE_PERMUTATIONS = [''.join(p) for p in itertools.permutations(ROLES)]
 random.shuffle(ROLE_PERMUTATIONS)
 
 def get_role_pref(p,PLAYER_ROLE_PREF):
@@ -21,7 +21,7 @@ def get_role_pref(p,PLAYER_ROLE_PREF):
       role_pref = ROLES if pref=='f' else pref
     return role_pref
 
-def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',notebook=False):
+def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality'):
     messages = []
     # player_ratings = {
     #     player: ratings.loc[player, "trueskill.Rating"]
@@ -46,7 +46,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
                 print(player+' not found in match history, using default MMR ({})'.format(trueskill.global_env().mu))
                 messages.append(player+' not found in match history, using default MMR ({})'.format(trueskill.global_env().mu))
                 player_ratings[player] = trueskill.Rating(trueskill.global_env().mu)
-            
+
     for i in range(PLAYERS_PER_GAME - len(current_players)):
         player_ratings["New player #{}".format(i + 1)] = trueskill.Rating()
     players = player_ratings.keys()
@@ -126,7 +126,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         #   if np.all([rp[i] in get_role_pref(p) for i,p in enumerate(team1)]):
         #     t1_roles = rp
         #     t1_good=True
-        #     break  
+        #     break
         # if t1_good:
         #   for rp in ROLE_PERMUTATIONS:
         #     if np.all([rp[i] in get_role_pref(p) for i,p in enumerate(team2)]):
@@ -175,4 +175,5 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         no_valid_matchups_str = 'no valid matchups found'
         messages.append(no_valid_matchups_str)
         print(no_valid_matchups_str)
+
     return final_matchups, messages
