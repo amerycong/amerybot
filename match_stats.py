@@ -13,13 +13,21 @@ def show_draft_stats(matches,num_shown=10,min_games=7):
   most_played = number_games_played.most_common(num_shown)
   number_games_banned = collections.Counter(all_bans)
   most_banned = number_games_banned.most_common(num_shown)
-  champ_wr = [(c,round(100*all_champs.count((c,True))/(all_champs.count((c,True))+all_champs.count((c,False))),2),number_games_played[c]) for c in np.unique([x[0] for x in all_champs]) if number_games_played[c]>=min_games]
+  champ_wr = [
+    (
+      c,
+      round(100*all_champs.count((c,True))/(all_champs.count((c,True))+all_champs.count((c,False))),2),
+      number_games_played[c],
+    )
+    for c in np.unique([x[0] for x in all_champs])
+    if number_games_played[c]>=min_games
+  ]
   highest_wr = sorted(champ_wr, key= lambda x:x[1],reverse=True)[:num_shown]
   lowest_wr = sorted(champ_wr, key= lambda x:x[1])[:num_shown]
   fmt = '{:<20}{:<15}{:<20}{:<15}{:<20}{:<8}{:<15}{:<20}{:<8}{:<15}'
   print(fmt.format('most played champs','# games','most banned champs','# games','highest wr champs','% wr','# games','lowest wr champs','% wr','# games'))
   messages = [fmt.format('most played champs','# games','most banned champs','# games','highest wr champs','% wr','# games','lowest wr champs','% wr','# games')]
-  for i, (mp, mb, hw, lw) in enumerate(zip(most_played,most_banned,highest_wr,lowest_wr)):
+  for _, (mp, mb, hw, lw) in enumerate(zip(most_played,most_banned,highest_wr,lowest_wr)):
     print(fmt.format(*mp,*mb,*hw,*lw))
     messages.append(fmt.format(*mp,*mb,*hw,*lw))
   return messages
@@ -44,7 +52,7 @@ def plot_elo_history(ratings,name='TensorFlow',out_dir=None,fn=None):
   name_list = [name] + [ratings.iloc[k].name for k in key_idx]
   name_list = list(set(name_list))
   sns.set_theme(style="darkgrid")
-  fig,ax = plt.subplots(figsize=(20,10))
+  _, ax = plt.subplots(figsize=(20,10))
   sorted_name_list = [x for x in ratings.index if x in name_list]
   for n in sorted_name_list:
     m='o' if n==name else ''
@@ -54,11 +62,11 @@ def plot_elo_history(ratings,name='TensorFlow',out_dir=None,fn=None):
   if out_dir is not None:
     out_fn = 'elo_history'
     if fn is not None:
-      out_fn+='_'+fn 
+      out_fn+='_'+fn
     plt.savefig(str(Path(out_dir) / (out_fn+'.png')))
 
 def plot_rank_dist(ratings,out_dir=None,bw_method=None,type='rating'):
-  fig,ax = plt.subplots(figsize=(20,10))
+  plt.subplots(figsize=(20,10))
   ratings['Rating'].plot.kde(bw_method)
   plt.xlabel('Rating')
   plt.title(r'$\mu={:.2f}$ ({})'.format(ratings['Rating'].mean(),find_division(compute_division_boundaries(), ratings['Rating'].mean()).rsplit(' ',2)[0]))
@@ -74,7 +82,7 @@ def plot_rank_dist(ratings,out_dir=None,bw_method=None,type='rating'):
 
 def synergy(wins, totals_with, out_dir=None):
   wr = wins/totals_with*100
-  fig,ax = plt.subplots(1,2,figsize=(30,15))
+  _, ax = plt.subplots(1,2,figsize=(30,15))
   vmax = totals_with.where(~np.triu(np.ones(totals_with.shape)).astype(bool)).max().max()
   sns.heatmap(totals_with,ax=ax[0],cmap='bwr',vmin=0,vmax=vmax,annot=True, fmt=".0f")
   ax[0].set_title('games played with')
@@ -89,7 +97,7 @@ def kryptonite(wins, totals_with, losses, totals_against, out_dir=None):
   avg_lr = 100-np.diagonal(wr)
   lr = losses/totals_against*100
   normalized_lr = lr.subtract(avg_lr,axis=1)
-  fig,ax = plt.subplots(1,2,figsize=(30,15))
+  _, ax = plt.subplots(1,2,figsize=(30,15))
   vmax = totals_against.where(~np.triu(np.ones(totals_against.shape)).astype(bool)).max().max()
   sns.heatmap(totals_against,ax=ax[0],cmap='bwr',vmin=0,vmax=vmax,annot=True, fmt=".0f")
   ax[0].set_title('games played against')

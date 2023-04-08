@@ -136,8 +136,8 @@ def parser(raw):
 
 def parse_match(raw):
     match = json.loads(raw)
-    
-    match_id = match["info"]["gameId"]    
+
+    match_id = match["info"]["gameId"]
     match_duration = match["info"]["gameDuration"]
     identities = {
         pid["participantId"]: {"summonerName": pid["summonerName"]} for pid in match['info']['participants']
@@ -156,7 +156,7 @@ def parse_match(raw):
         )
         for team in (win_team, loss_team)
     )
-    
+
     match_bans = [champs_by_key[x['championId']]['id'] for x in match["info"]["teams"][0]["bans"]+match["info"]["teams"][1]["bans"]]
     player_stats = {
         get_canonical_name(identities[p["participantId"]]["summonerName"]): {
@@ -190,8 +190,8 @@ def parse_match(raw):
 
 def parse_old_match(raw):
     match = json.loads(raw)
-    
-    match_id = match["gameId"]    
+
+    match_id = match["gameId"]
     match_duration = match["gameDuration"]
     identities = {
         pid["participantId"]: pid["player"] for pid in match["participantIdentities"]
@@ -210,7 +210,7 @@ def parse_old_match(raw):
         )
         for team in (win_team, loss_team)
     )
-    
+
     match_bans = [champs_by_key[x['championId']]['id'] for x in match["teams"][0]["bans"]+match["teams"][1]["bans"]]
     player_stats = {
         get_canonical_name(identities[p["participantId"]]["summonerName"]): {
@@ -253,15 +253,15 @@ def parse_old_match(raw):
             loss = tuple([x.replace(n,n+' (jungle)') for x in list(loss)])
     if False:
       #lane only stats (jg in lane lul)
-      for n in ['MrRgrs', 'ZoSo']:       
+      for n in ['MrRgrs', 'ZoSo']:
         if n in player_stats.keys():
           if player_stats[n]['lane']!='JUNGLE':
             player_stats[n+' (lane)']=player_stats.pop(n)
             win = tuple([x.replace(n,n+' (lane)') for x in list(win)])
             loss = tuple([x.replace(n,n+' (lane)') for x in list(loss)])
     if False:
-      #adc only stats 
-      for n in ['ANiceSunset','Ahrizona','Kurtzorz']:       
+      #adc only stats
+      for n in ['ANiceSunset','Ahrizona','Kurtzorz']:
         if n in player_stats.keys():
           if (player_stats[n]['role']!='DUO_SUPPORT') and (player_stats[n]['lane']=='BOTTOM'):
             player_stats[n+' (adc)']=player_stats.pop(n)
@@ -351,7 +351,7 @@ def compute_kda(stats,string=True):
       return "{:.1f} / {:.1f} / {:.1f} ({:.1f})".format(kills, deaths, assists, kda)
     else:
       return kda
-  
+
 def compute_gametime(stats):
     total_game_duration = sum(game['match_duration']/60.0 for game in stats if game)
     num_games = sum(1 for game in stats if game)
@@ -474,14 +474,14 @@ def compute_ratings(matches,filter=False,sort_metric='Rating'):
                 wins[i][j] += 1 if (i in match['win'] and j in match['win']) else 0
                 totals_with[i][j] += 1
               else:
-                wins[i][j] = 1 if (i in match['win'] and j in match['win']) else 0 
-                totals_with[i][j] = 1 
+                wins[i][j] = 1 if (i in match['win'] and j in match['win']) else 0
+                totals_with[i][j] = 1
             else:
               if i in totals_against.keys() and j in totals_against[i].keys():
-                losses[i][j] += 1 if (i in match['loss'] and j in match['win']) else 0 
+                losses[i][j] += 1 if (i in match['loss'] and j in match['win']) else 0
                 totals_against[i][j] += 1
               else:
-                losses[i][j] = 1 if (i in match['loss'] and j in match['win']) else 0 
+                losses[i][j] = 1 if (i in match['loss'] and j in match['win']) else 0
                 totals_against[i][j] = 1
 
     rows = [(name, rating, stats[name], histories[name]) for name, rating in ratings.items()]
@@ -523,7 +523,7 @@ def compute_ratings(matches,filter=False,sort_metric='Rating'):
 
     if filter:
       ratings = ratings[ratings.index.isin(filter_list)]
-    
+
     wins = pd.DataFrame(wins)
     wins = wins.reindex(sorted(wins.columns), axis=1)
     wins = wins.sort_index()

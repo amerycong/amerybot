@@ -33,7 +33,7 @@ def do_matchmaking(ratings, current_players,PLAYER_ROLE_PREF,sortby='quality',no
         print("too many players entered ("+len(set(current_players))+")")
         return None, "too many players entered ("+len(set(current_players))+")"
     for player in current_players:
-        if type(player)==tuple:#',' in player:
+        if isinstance(player, tuple): #',' in player:
             player_name = player[0]
             player_input = player[1]
             player_ratings[player_name] = trueskill.Rating(float(player_input.split(',')[0].strip()))
