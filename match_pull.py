@@ -17,7 +17,7 @@ def pull_latest_match(ign, tournament_code, api_key,json_dir,notebook=False):
     cass.set_riot_api_key(api_key)
 
     messages = []
-    
+
     player = Summoner(name=ign,region="NA")
     match_ids = [x.id for x in player.match_history]
 
