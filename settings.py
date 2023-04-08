@@ -1,9 +1,32 @@
+from pathlib import Path
 import requests
 import configparser
 from dotenv import load_dotenv
 import os
 import json
 load_dotenv()
+
+
+def get_json_data(filepath):
+    data = {}
+    try:
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        Path(filepath).touch(exist_ok=True)
+        with open(filepath, 'w') as f:
+            f.write("{}")
+    return data
+
+
+def get_list_data(filepath):
+    data = []
+    try:
+        with open(filepath, 'r') as f:
+            data = [line.rstrip() for line in f]
+    except FileNotFoundError:
+        Path(filepath).touch(exist_ok=True)
+    return data
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -32,20 +55,13 @@ sort_metric = inhouse_config['RATINGS']['sort_metric']
 
 json_dir = inhouse_config['DATA']['json_dir']
 smurf_filename = inhouse_config['USERDATA']['smurfs']
-with open(smurf_filename,'r') as f:
-    SMURFS = json.load(f)
+intel_list_filename = inhouse_config['USERDATA']['intel_list']
+guest_list_filename = inhouse_config['USERDATA']['guest_list']
 
-rolepref_filename = config['USERDATA']['rolepref']
-with open(rolepref_filename,'r') as f:
-    PLAYER_ROLE_PREF = json.load(f)
-
-intel_list_filename = config['USERDATA']['intel_list']
-with open(intel_list_filename) as f:
-    intel_list = [line.rstrip() for line in f]
-
-guest_list_filename = config['USERDATA']['guest_list']
-with open(guest_list_filename) as f:
-    guest_list = [line.rstrip() for line in f]
+SMURFS = get_json_data(smurf_filename)
+PLAYER_ROLE_PREF = get_json_data(rolepref_fn)
+intel_list = get_list_data(intel_list_filename)
+guest_list = get_list_data(guest_list_filename)
 
 version = requests.get('https://ddragon.leagueoflegends.com/api/versions.json').json()[0]
 champs = requests.get('https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json'.format(version)).json()
