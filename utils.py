@@ -3,14 +3,7 @@ import datetime
 import re
 import itertools
 import ast
-import configparser
-import json
-
-inhouse_config = configparser.ConfigParser()
-inhouse_config.read("config/inhouse.cfg")
-idmapping_fn = inhouse_config['USERDATA']['idmapping']
-rolepref_fn = inhouse_config['USERDATA']['rolepref']
-smurfs_fn = inhouse_config['USERDATA']['smurfs']
+from . import settings
 
 roles = ['t','j','m','a','s']
 valid_roleprefs = ['f']
@@ -85,23 +78,15 @@ def participant_parse(arg):
 
 #get proper spacing/capitalization
 def get_proper_name(ign):
-    if type(ign)!=str:
+    if not isinstance(ign, str):
         return ign
-    with open(rolepref_fn,'r') as f:
-        roleprefdict = json.load(f)
-    with open(smurfs_fn,'r') as f:
-        smurfs = json.load(f)
     raw_ign = ign.replace(' ','').lower()
-    for i,k in enumerate(list(smurfs.keys())):
+    for k, true_ign in settings.SMURFS.items():
         raw_key = k.replace(' ','').lower()
         if raw_ign == raw_key:
-            true_ign = smurfs[k]
             return true_ign
-    for i,k in enumerate(list(roleprefdict.keys())):
+    for k, true_ign in settings.PLAYER_ROLE_PREF.items():
         raw_key = k.replace(' ','').lower()
         if raw_ign == raw_key:
-            true_ign = k
             return true_ign
     return ign
-
-    

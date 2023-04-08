@@ -1,41 +1,26 @@
 from discord.ext import commands
 import discord
-import configparser
 import json
 from utils import check_valid_role, get_proper_name
 from inhouse import get_player_stats
+import settings
 from pathlib import Path
 #https://gist.github.com/Rapptz/6706e1c8f23ac27c98cee4dd985c8120
 
-config = configparser.ConfigParser()
-config.read("config/bot.cfg")
 
-ENABLE_GDRIVE = config['GDRIVE'].getboolean('enable')
-
-OUTPUT_CHANNEL_ID = int(config['OUTPUTS']['output_channel_id'])
-OUT_DIR =  config['OUTPUTS']['output_dir']
-
-inhouse_config = configparser.ConfigParser()
-inhouse_config.read("config/inhouse.cfg")
-idmapping_fn = inhouse_config['USERDATA']['idmapping']
-rolepref_fn = inhouse_config['USERDATA']['rolepref']
-smurfs_fn = inhouse_config['USERDATA']['smurfs']
-
-if ENABLE_GDRIVE:
+if settings.ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
 
     gauth = GoogleAuth()
     drive = GoogleDrive(gauth)
 
-    fileID = config['GDRIVE']['file_id']
-
     #do this once at the start to avoid timing out discord wait
-    gfile = drive.CreateFile({'id': fileID})
+    gfile = drive.CreateFile({'id': settings.fileID})
     #fileID2 = config['GDRIVE']['file_id2']
     #gfile = drive.CreateFile({'parents': [{'id': fileID2}]})
     # Read file and set it as the content of this instance.
-    gfile.SetContentFile(rolepref_fn)
+    gfile.SetContentFile(settings.rolepref_fn)
     gfile.Upload() # Upload the file.
 
 class normie_commands(commands.Cog):
@@ -48,12 +33,12 @@ class normie_commands(commands.Cog):
 
     @commands.command()
     async def viewrolepref(self, ctx):
-        with open(idmapping_fn,'r') as f:
+        with open(settings.idmapping_fn,'r') as f:
             idmapping = json.load(f)
         if str(ctx.author.id) not in idmapping.keys():
             await ctx.reply('user not found, ask amery for help')
             return
-        with open(rolepref_fn,'r') as f:
+        with open(settings.rolepref_fn,'r') as f:
             roleprefdict = json.load(f)
         currrolepref = roleprefdict[idmapping[str(ctx.author.id)]]
         response = str(ctx.author)+' ('+idmapping[str(ctx.author.id)]+')\'s current role pref is '+currrolepref
@@ -64,7 +49,7 @@ class normie_commands(commands.Cog):
         if arg == None:
             await ctx.reply('hello? no input?')
             return
-        with open(idmapping_fn,'r') as f:
+        with open(settings.idmapping_fn,'r') as f:
             idmapping = json.load(f)
         if str(ctx.author.id) not in idmapping.keys():
             await ctx.reply('user not found, ask amery for help. maybe be a good club member and play more inhouses.')
@@ -76,23 +61,23 @@ class normie_commands(commands.Cog):
             return
         response = 'setting '+str(ctx.author)+' ('+idmapping[str(ctx.author.id)]+')\'s role pref to '+newrolepref
         await ctx.reply(response)
-        with open(rolepref_fn,'r') as f:
+        with open(settings.rolepref_fn,'r') as f:
             roleprefdict = json.load(f)
         roleprefdict[idmapping[str(ctx.author.id)]] = newrolepref
-        with open(rolepref_fn,'w') as f:
+        with open(settings.rolepref_fn,'w') as f:
             json.dump(roleprefdict,f,indent=4,ensure_ascii=False)
-        if ENABLE_GDRIVE:
-            gfile = drive.CreateFile({'id': fileID})
+        if settings.ENABLE_GDRIVE:
+            gfile = drive.CreateFile({'id': settings.fileID})
             #gfile = drive.CreateFile({'parents': [{'id': fileID2}]})
             # Read file and set it as the content of this instance.
-            gfile.SetContentFile(rolepref_fn)
+            gfile.SetContentFile(settings.rolepref_fn)
             gfile.Upload() # Upload the file.
 
     @commands.command()
     async def viewprogress(self, ctx, *args):
-        with open(idmapping_fn,'r') as f:
+        with open(settings.idmapping_fn,'r') as f:
             idmapping = json.load(f)
-        with open(rolepref_fn,'r') as f:
+        with open(settings.rolepref_fn,'r') as f:
             roleprefdict = json.load(f)
         if args:
             if '<@' == args[0][:2]:
@@ -115,8 +100,8 @@ class normie_commands(commands.Cog):
             else:
                 await ctx.reply("you're not registered so no data for you")
                 return
-        response = await self.bot.loop.run_in_executor(None, get_player_stats, ign, OUT_DIR, str(ctx.author.id))
-        out_fn = str(Path(OUT_DIR) / ('elo_history_'+str(ctx.author.id)+'.png'))
+        response = await self.bot.loop.run_in_executor(None, get_player_stats, ign, settings.OUT_DIR, str(ctx.author.id))
+        out_fn = str(Path(settings.OUT_DIR) / ('elo_history_'+str(ctx.author.id)+'.png'))
         await ctx.reply(file=discord.File(out_fn))
         await ctx.reply("```"+"\n".join(response)+"```")
 
