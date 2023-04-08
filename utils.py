@@ -85,7 +85,7 @@ def get_proper_name(ign):
         raw_key = true_ign.replace(' ','').lower()
         if raw_ign == raw_key:
             return true_ign
-    for i, true_ign in settings.PLAYER_ROLE_PREF.items():
+    for true_ign, r in settings.PLAYER_ROLE_PREF.items():
         raw_key = true_ign.replace(' ','').lower()
         if raw_ign == raw_key:
             return true_ign
