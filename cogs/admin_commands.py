@@ -215,11 +215,14 @@ async def setup(bot: commands.Bot):
 
     async def handle_reaction(reaction: discord.Reaction):
         message = reaction.message
+        content = message.content
         minutes = (pytz.timezone('utc').localize(datetime.utcnow()) - message.created_at).total_seconds() / 60
         if minutes > 60:
             print('Old message. Not handling reactions anymore.')
             return
-        content = message.content
+        if not content.startswith("Trying to start an inhouse"):
+            print('wrong message to react to. ignoring')
+            return
         if not message.author.bot:
             return
         count = 0
@@ -234,7 +237,7 @@ async def setup(bot: commands.Bot):
         # checking extra prevents us from pinging people over and over
         up_users = [x async for x in up_reaction.users() if not x.bot]
         parts = ', '.join([x.name for x in up_users])
-        is_completed = count >= 1
+        is_completed = count >= 10
         if is_completed:
             l2 = f'Complete: {parts}'
             if not extra:
