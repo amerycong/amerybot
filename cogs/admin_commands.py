@@ -12,6 +12,10 @@ import pytz
 #https://gist.github.com/Rapptz/6706e1c8f23ac27c98cee4dd985c8120
 THUMBSUP = "👍"
 
+inhouse_interest_messages = set()
+inhouse_complete_messages = set()
+
+
 if settings.ENABLE_GDRIVE:
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
@@ -124,6 +128,7 @@ class admin_commands(commands.Cog):
     @commands.has_any_role("Admin")
     async def startinhouse(self, ctx: commands.Context):
         message = await ctx.send("Trying to start an <@{}>. Thumbs up to join.\nParticipants: 0".format(settings.DISCORD_IDS['inhouse']))
+        inhouse_interest_messages.add(message.id)
         await message.add_reaction(THUMBSUP)
 
     @commands.command()
@@ -214,22 +219,20 @@ async def setup(bot: commands.Bot):
 
     @bot.event
     async def on_reaction_add(reaction, user):
-        await handle_reaction(reaction)
+        await handle_inhouse_reaction(reaction)
 
     @bot.event
     async def on_reaction_remove(reaction, user):
-        await handle_reaction(reaction)
+        await handle_inhouse_reaction(reaction)
 
-    async def handle_reaction(reaction: discord.Reaction):
+    async def handle_inhouse_reaction(reaction: discord.Reaction):
         message = reaction.message
         content = message.content
         minutes = (pytz.timezone('utc').localize(datetime.utcnow()) - message.created_at).total_seconds() / 60
+        if message.id not in inhouse_interest_messages:
+            return
         if minutes > 60:
             print('Old message. Not handling reactions anymore.')
-            return
-        if not content.startswith("Trying to start an"):
-            return
-        if not message.author.bot:
             return
         count = 0
         up_reaction = None
@@ -239,21 +242,18 @@ async def setup(bot: commands.Bot):
                 count = reaction.count - 1
                 break
         assert up_reaction
-        l1, l2, *extra = content.split('\n')
-        # checking extra prevents us from pinging people over and over
+        l1, l2 = content.split('\n')
         up_users = [x async for x in up_reaction.users() if not x.bot]
         parts = ', '.join([x.name for x in up_users])
         is_completed = count >= 10
         if is_completed:
             l2 = f'Complete: {parts}'
-            if not extra:
-                l2 += '\nPinging...'
+            if message.id not in inhouse_complete_messages:
                 ping = [f'<@{x.id}>' for x in up_users]
                 new_message = f"We have 10, come join the inhouse -- {''.join(ping)}"
+                inhouse_complete_messages.add(message.id)
                 await message.reply(new_message)
         else:
             l2 = f'Participants: {count}'
         content = f"{l1}\n{l2}"
-        if extra:
-            content += f'\n{extra[0]}'
         await message.edit(content=content)
